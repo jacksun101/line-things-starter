@@ -1,11 +1,11 @@
-#include <M5Stack.h>
+#include <M5StickC.h>
 #include <BLEServer.h>
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
 // Device Name: Maximum 30 bytes
-#define DEVICE_NAME "LINE Things Trial M5Stack"
+#define DEVICE_NAME "LINE Things Trial M5StickC"
 
 // User service UUID: Change this to your generated service UUID
 #define USER_SERVICE_UUID "91E4E176-D0B9-464D-9FE4-52EE3E9F1552"
@@ -16,9 +16,6 @@
 // PSDI Service UUID: Fixed value for Developer Trial
 #define PSDI_SERVICE_UUID "E625601E-9E55-4597-A598-76018A0D293D"
 #define PSDI_CHARACTERISTIC_UUID "26E2B12B-85F0-4F3F-9FDD-91D114270E6E"
-
-#define TEXT_X (M5.Lcd.width() / 2)
-#define TEXT_Y (M5.Lcd.height() / 2 / 2)
 
 BLEServer* thingsServer;
 BLESecurity *thingsSecurity;
@@ -46,16 +43,10 @@ class writeCallback: public BLECharacteristicCallbacks {
     std::string value = bleWriteCharacteristic->getValue();
     if ((char)value[0] <= 1) {
       if ((char)value[0] == 1) {
-        M5.Lcd.fillRect(0, 0, M5.Lcd.width(), M5.Lcd.height() / 2, WHITE);
-        M5.Lcd.setTextColor(BLACK);
-        M5.Lcd.setTextSize(4);
-        M5.Lcd.drawString("LED: ON ", TEXT_X, TEXT_Y);
+        digitalWrite(M5_LED, LOW);
       }
       else {
-        M5.Lcd.fillRect(0, 0, M5.Lcd.width(), M5.Lcd.height() / 2, BLACK);
-        M5.Lcd.setTextColor(WHITE);
-        M5.Lcd.setTextSize(4);
-        M5.Lcd.drawString("LED: OFF", TEXT_X, TEXT_Y);
+        digitalWrite(M5_LED, HIGH);
       }
     }
   }
@@ -76,24 +67,29 @@ void setup() {
   setupServices();
   startAdvertising();
 
-  // M5Stack LCD Setup
-  M5.Lcd.setTextDatum(MC_DATUM);
-  M5.Lcd.clear(BLACK);
-  M5.Lcd.qrcode("https://line.me/R/nv/things/deviceLink", 110, 130, 100, 3);
+  pinMode(M5_LED, OUTPUT);
+  digitalWrite(M5_LED, HIGH);
+
+  // M5StickC LCD Setup
+  uint8_t brightness = 8;
+  M5.Axp.ScreenBreath(brightness);
+  M5.Lcd.qrcode("https://line.me/R/nv/things/deviceLink", 0, 0, 80, 3);
   M5.Lcd.setTextColor(YELLOW);
-  M5.Lcd.setTextSize(2);
-  M5.Lcd.drawString("Ready to Connect", TEXT_X, TEXT_Y);
-  Serial.println("Ready to Connect");
+  M5.Lcd.setCursor(0, 80, 2);
+  M5.Lcd.println("Not Connect");
+  Serial.println("Not Connect");
 }
 
 void loop() {
   M5.update();
 
-  if (M5.BtnB.wasPressed()) {
+  if (M5.BtnA.wasPressed()) {
+    Serial.println("Pressed");
     uint8_t btnValue = 1;
     notifyCharacteristic->setValue(&btnValue, 1);
     notifyCharacteristic->notify();
-  } else if (M5.BtnB.wasReleased()) {
+  } else if (M5.BtnA.wasReleased()) {
+    Serial.println("Released");
     uint8_t btnValue = 0;
     notifyCharacteristic->setValue(&btnValue, 1);
     notifyCharacteristic->notify();
@@ -104,18 +100,18 @@ void loop() {
     delay(500); // Wait for BLE Stack to be ready
     thingsServer->startAdvertising(); // Restart advertising
     oldDeviceConnected = deviceConnected;
-    M5.Lcd.fillRect(0, 0, M5.Lcd.width(), M5.Lcd.height() / 2, BLACK);
+    M5.Lcd.fillRect(0, 80, 80, 40, BLACK);
     M5.Lcd.setTextColor(YELLOW);
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.drawString("Ready to Connect", TEXT_X, TEXT_Y);
+    M5.Lcd.setCursor(0, 80, 2);
+    M5.Lcd.println("Not Connect");
   }
   // Connection
   if (deviceConnected && !oldDeviceConnected) {
     oldDeviceConnected = deviceConnected;
-    M5.Lcd.fillRect(0, 0, M5.Lcd.width(), M5.Lcd.height() / 2, BLACK);
+    M5.Lcd.fillRect(0, 80, 80, 40, BLACK);
     M5.Lcd.setTextColor(GREEN);
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.drawString("Connected", TEXT_X, TEXT_Y);
+    M5.Lcd.setCursor(0, 80, 2);
+    M5.Lcd.println("Connected");
   }
 }
 
